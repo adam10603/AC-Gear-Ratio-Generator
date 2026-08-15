@@ -1,0 +1,223 @@
+:root {
+    --dim-text: #7e899e;
+    --normal-text: #c9cacc;
+    --link-color: #6dbdf3;
+    --page-bg: #282C34;
+    --dark-bg: #1d2026;
+    --light-bg: #3a3d44;
+    --error-bg: #500000;
+    --selected-flag-bg: #034870;
+    --selected-flag-text: white;
+    --inputs-width: 220px;
+    --normal-font-size: 18px;
+    --small-font-size: 14px;
+}
+
+* {
+    box-sizing: border-box;
+    font-size: var(--normal-font-size);
+    font-family: sans-serif;
+    color: var(--normal-text);
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.selectable {
+    -webkit-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+body {
+    background-color: var(--page-bg);
+    margin: 30px;
+}
+
+table {
+    border-spacing: 0px;
+    border-collapse: collapse;
+}
+
+select {
+    padding: 8px;
+    background-color: var(--dark-bg);
+    border: 0px;
+}
+
+input, textarea {
+    font-family: monospace;
+    background-color: var(--dark-bg);
+    border: 0px;
+}
+
+button {
+    background-color:   var(--dark-bg);
+    display:            inline-block;
+    padding:            12px 24px;
+    text-decoration:    none;
+    border:             none;
+    transition:         background-color .25s ease-in-out;
+}
+
+button:hover {
+    background-color: var(--light-bg);
+}
+
+button:active {
+    transition:         background-color .05s ease-in-out !important;
+    background-color:   var(--selected-flag-bg);
+}
+
+.dimmedColor {
+    color: var(--dim-text) !important;
+}
+
+.badInput {
+    background-color: var(--error-bg) !important;
+}
+
+.invisible {
+    visibility: hidden;
+}
+
+@media only screen and (max-width: 768px) {
+    .hideWhenSmall {
+        visibility: hidden;
+    }
+    .deleteWhenSmall {
+        display: none;
+    }
+    .fullWidthWhenSmall {
+        width: 100% !important;
+    }
+}
+
+#github_link_container {
+    color: var(--link-color);
+    display: flex;
+    align-items: center;
+    font-size: var(--small-font-size);
+    position: absolute;
+}
+
+#github_link_container:hover {
+    text-decoration: underline;
+}
+
+#github_logo {
+    margin-right: 10px;
+    width: 24px;
+    height: 24px;
+}
+
+#title {
+    text-align: center;
+    margin-bottom: 25px;
+}
+
+#instructions {
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+#upper_table {
+    width: 100%;
+    margin-bottom: 30px;
+}
+
+#upper_table_row {
+    display: flex;
+    justify-content: center;
+}
+
+#upper_table_col_1, #upper_table_col_2 {
+    width: 40%;
+    max-width: 600px;
+    height: 400px;
+}
+
+#inputs_table {
+    width: 100%;
+}
+
+#inputs_table tr {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 42px;
+}
+
+#inputs_table tr td {
+    text-align: right;
+}
+
+#inputs_table tr td:nth-child(1) {
+    max-width: var(--inputs-width);
+    width: 100%;
+}
+
+#inputs_table tr td:nth-child(2) {
+    width: 32px;
+}
+
+#inputs_table tr td:nth-child(3) {
+    max-width: var(--inputs-width);
+    width: 100%;
+}
+
+#inputs_table td {
+    padding: 10px;
+}
+
+#inputs_table input {
+    padding: 8px;
+    width: 100%;
+}
+
+#outputs_table {
+    outline: 2px solid var(--dark-bg);
+    width: 100%;
+    table-layout: fixed;
+}
+
+#outputs_table td {
+    border: 0px;
+    border-collapse: collapse;
+    padding: 24px;
+    text-align: center;
+    width: 100%;
+    height: 100%;
+}
+
+#outputs_table textarea {
+    resize: none;
+    width: 100%;
+}
+
+/* Tooltip stuff */
+
+.tooltip {
+    position: relative;
+    display: inline-block;
+    border-bottom: 1px dotted black;
+}
+
+.tooltip .tooltiptext {
+    visibility: hidden;
+    width: calc(100vw * 0.5 - 250px);
+    background-color: black;
+    color: var(--normal-text);
+    text-align: center;
+    border-radius: 5px;
+    padding: 10px 10px;
+
+    position: absolute;
+    z-index: 1;
+}
+
+.tooltip:hover .tooltiptext {
+    visibility: visible;
+}

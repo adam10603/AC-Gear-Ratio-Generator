@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+    <title>AC Gear Ratio Generator ⚙️</title>
+    <link rel="stylesheet" type="text/css" href="css.css">
+    <script type="text/javascript" src="chart.js"></script>
+    <script type="text/javascript" src="js.js"></script>
+</head>
+
+<body onload="initPage()">
+    <a href="https://github.com/adam10603/AC-Gear-Ratio-Generator">
+        <div id="github_link_container" class="hideWhenSmall">
+            <img src="github.png" id="github_logo">
+            GitHub page
+        </div>
+    </a>
+
+    <div id="title">
+        <h1>Assetto Corsa Gear Ratio Generator ⚙️</h1>
+    </div>
+
+    <div id="instructions">
+        Fill in the parameters according to the needs of the car you're creating,<br>and the tool will generate the AC data files needed for its gearbox configuration.<!-- <br><br><a target="_blank" href="https://www.desmos.com/calculator/d949b3fc08">Click here for an interactive demo of the gear ratio algorithm!</a> -->
+    </div>
+
+    <table id="upper_table">
+        <tr id="upper_table_row">
+            <td id="upper_table_col_1" class="fullWidthWhenSmall">
+                <table id="inputs_table">
+                </table>
+            </td>
+            <td id="upper_table_col_2" class="deleteWhenSmall">
+                <canvas id="graph_canvas"></canvas>
+            </td>
+        </tr>
+    </table>
+
+    <table id="outputs_table" class="invisible">
+    </table>
+
+</body>
+
+</html>
