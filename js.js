@@ -24,6 +24,10 @@ function isInputValid(value, minimum, maximum) {
     return (value >= minimum && value <= maximum);
 }
 
+function extractBool(input) {
+    return !!input;
+}
+
 const ATAN_1 = 0.78539816339744830961566084581987572105; // 45° in radians
 
 function S0(progress, firstRatio, lastRatio) {
@@ -121,9 +125,10 @@ const configFields = [
     ["defaultLastGear", "Default ratio of last", parseFloat, 0.15, 7.0, 1.5],
     ["sFactor", "Distribution factor", parseFloat, 0.0, 1.0, 0.6],
     ["defaultFinalDrive", "Default ratio of final drive", parseFloat, 0.15, 7.0, 2.667],
-    ["stepsPerGear", "Gear slider clicks", parseInt, 1, 20, 9],
+    ["stepsPerGear", "Gear slider clicks", parseInt, 1, 20, 15],
     ["stepsFinal", "Final drive slider clicks", parseInt, 1, 20, 3],
-    ["finalDriveSpeedChangeRatio", "Final drive slider step", parseFloat, 0.01, 0.2, 0.03333]
+    ["finalDriveSpeedChangeRatio", "Final drive slider step", parseFloat, 0.01, 0.2, 0.03333],
+    ["gearStepsOverlap", "Extended gear sliders", extractBool, false, true, true]
 ];
 
 const configTooltips = {
@@ -132,9 +137,10 @@ const configTooltips = {
     "defaultLastGear": "Desired default ratio of last gear, between 0.15 - 7.0.<br><br>A good last gear should make the top speed of the car line up with the peak power RPM of the engine (or just slightly after it, if possible without hitting the limiter).<br><br>For example a good top speed reference is the end of the Monza straight.",
     "sFactor": "Determines the distribution of the default gear ratios, between 0.0 - 1.0.<br><br>0.0 is a good default for most cars.<br><br>At 0.0 the top speeds of each gear will be evenly spaced, which results in larger RPM drops in lower gears and smaller RPM drops in higher gears.<br><br>At 1.0 the lower gears become more closely spaced and the higher gears move further apart, which works best if the peak power of the engine sits on a wide and flat area of the power curve.<br><br>Refer to the graph to see the effects in practice!",
     "defaultFinalDrive": "Desired default ratio of the final drive.<br><br>Just set it to a value that allows the first and last gear ratios above to perform ideally with the default setup of the car.",
-    "stepsPerGear": "How many steps should each gear slider have on the setup screen, between 1 - 100.<br><br>More steps = more granular adjustment of each gear.<br><br>Try to use odd numbers (like 11 or 9) since that allows the default ratios to sit right in the middle of the sliders.<br><br>Too many steps could result in duplicate gear ratios in the output, but you'll be warned if that's the case.",
+    "stepsPerGear": "How many steps should each gear slider have on the setup screen, between 1 - 100.<br><br>More steps = more granular adjustment of each gear.<br><br>Try to use odd numbers (like 11 or 13) since that allows the default ratios to sit right in the middle of the sliders.<br><br>Too many steps could result in duplicate gear ratios in the output, but you'll be warned if that's the case.",
     "stepsFinal": "How many steps the final drive slider will have on the setup screen, between 1 - 100.<br><br>More steps = a winder range of adjustment.<br><br>Odd numbers work well here too, so the default can be in the middle.",
-    "finalDriveSpeedChangeRatio": "How much 1 click of final drive adjustment will change the top speed.<br><br>For example 0.03 means 3% higher top speed if the final drive is increased by 1 step on the setup screen."
+    "finalDriveSpeedChangeRatio": "How much 1 click of final drive adjustment will change the top speed.<br><br>For example 0.03 means 3% higher top speed if the final drive is increased by 1 step on the setup screen.",
+    "gearStepsOverlap": "Doubles the range of the gear ratio sliders (not the final drive) by allowing their adjustment ranges to overlap.<br><br>When this is enabled it's best to increase the number of gear slider clicks to maintain granularity, since each slider will now cover a bigger range."
 };
 
 function initPage() {
@@ -142,9 +148,15 @@ function initPage() {
 
     for (let [id, label, extractor, minimum, maximum, defaultValue] of configFields) {
         let tableRow = document.createElement("tr");
-        tableRow.innerHTML += `<td><div class="tooltip">${label}<span class="tooltiptext">${configTooltips[id]}</span></div></td>`;
-        tableRow.innerHTML += `<td>=</td>`;
-        tableRow.innerHTML += `<td><input type="text" id="${id}" name="${id}" class="selectable" value="${defaultValue}"></td>`;
+        if (extractor === extractBool) {
+            tableRow.innerHTML += `<td><div class="tooltip">${label}<span class="tooltiptext">${configTooltips[id]}</span></div></td>`;
+            tableRow.innerHTML += `<td>=</td>`;
+            tableRow.innerHTML += `<td><input type="checkbox" id="${id}" name="${id}" ${defaultValue ? "checked" : ""}></td>`;
+        } else {
+            tableRow.innerHTML += `<td><div class="tooltip">${label}<span class="tooltiptext">${configTooltips[id]}</span></div></td>`;
+            tableRow.innerHTML += `<td>=</td>`;
+            tableRow.innerHTML += `<td><input type="text" id="${id}" name="${id}" class="selectable" value="${defaultValue}"></td>`;
+        }
         inputsTable.appendChild(tableRow);
     }
 
@@ -208,7 +220,7 @@ function getSetupSliderName(n) {
 }
 
 // returns null if duplicate ratios are detected
-function buildRealRatioSet(gearNumber, nSteps, rangeStart, rangeEnd, defaultGearSetOut, graphGearSetInvOut) {
+function buildRealRatioSet(gearNumber, nSteps, rangeStart, rangeEnd, defaultInvRatio, defaultGearSetOut, graphGearSetInvOut) {
     let text = "";
     let halfwayIndex = Math.floor((nSteps - 1) / 2);
     let uniqueOutputRatios = new Set();
@@ -216,8 +228,16 @@ function buildRealRatioSet(gearNumber, nSteps, rangeStart, rangeEnd, defaultGear
     // console.log(`${gearNumber}, ${nSteps}, ${rangeStart}, ${rangeEnd}`);
 
     for (let step = 0; step < nSteps; step++) {
-        let t = nSteps === 1 ? 0.5 : step / (nSteps - 1);
-        let targetInv = lerp(rangeStart, rangeEnd, t);
+        // ensuring the default ratio is always used as-is, and handling the steps below and above it separately
+        let targetInv = defaultInvRatio;
+        if (nSteps > 1) {
+            if (step <= halfwayIndex) {
+                targetInv = lerp(rangeStart, defaultInvRatio, step / halfwayIndex);
+            } else {
+                targetInv = lerp(defaultInvRatio, rangeEnd, (step - halfwayIndex) / halfwayIndex);
+            }
+        }
+
         let result = findBestRatio(targetInv);
         let ratioText = round(result.ratio, 3).toString();
 
@@ -297,7 +317,8 @@ function run() {
     let allGood = true;
     for (let [id, label, extractor, minimum, maximum, defaultValue] of configFields) {
         let inputElement = document.getElementById(id);
-        let value = extractor(inputElement.value);
+        let value = (extractor === extractBool) ? inputElement.checked : inputElement.value;
+        value = extractor(value);
         if (isNaN(value) || value < minimum || value > maximum) {
             inputElement.classList.add("badInput");
             allGood = false;
@@ -328,14 +349,16 @@ function run() {
         outputFiles[name] = text;
     }
 
+    let rangeLerpT = cfg.gearStepsOverlap ? 1.0 : 0.5;
+
     for (let g = 0; g < cfg.numGears; g++) {
         let defaultInv = 1.0 / defaultGearsTarget[g];
         let rangeStart = defaultInv;
         let rangeEnd = defaultInv;
 
         if (cfg.stepsPerGear >= 2) {
-            rangeStart = lerp(defaultInv, 1.0 / (defaultGearsTarget[g - 1] || 1.0), 0.5);
-            rangeEnd = lerp(defaultInv, 1.0 / (defaultGearsTarget[g + 1] || 1.0), 0.5);
+            rangeStart = lerp(defaultInv, 1.0 / (defaultGearsTarget[g - 1] || 1.0), rangeLerpT);
+            rangeEnd = lerp(defaultInv, 1.0 / (defaultGearsTarget[g + 1] || 1.0), rangeLerpT);
 
             if (g === 0) {
                 rangeStart = defaultInv - (rangeEnd - defaultInv);
@@ -348,7 +371,7 @@ function run() {
             rangeEnd -= rangeStep * 0.5;
         }
 
-        let content = buildRealRatioSet(g + 1, cfg.stepsPerGear, rangeStart, rangeEnd, defaultGearsReal, graphGearsInvReal);
+        let content = buildRealRatioSet(g + 1, cfg.stepsPerGear, rangeStart, rangeEnd, defaultInv, defaultGearsReal, graphGearsInvReal);
 
         // if duplicate ratios are detected the step count should be reduced
         if (content === null) {
@@ -364,7 +387,7 @@ function run() {
     let finalHalfRange = (cfg.stepsFinal - 1) * 0.5 * cfg.finalDriveSpeedChangeRatio;
     let finalStart = 1.0 / cfg.defaultFinalDrive * (1.0 - finalHalfRange);
     let finalEnd = 1.0 / cfg.defaultFinalDrive * (1.0 + finalHalfRange);
-    let finalContent = buildRealRatioSet("final", cfg.stepsFinal, finalStart, finalEnd, defaultGearsReal, graphGearsInvReal);
+    let finalContent = buildRealRatioSet("final", cfg.stepsFinal, finalStart, finalEnd, 1.0 / cfg.defaultFinalDrive, defaultGearsReal, graphGearsInvReal);
 
     // if duplicate ratios are detected the step size should be reduced
     if (finalContent === null) {
