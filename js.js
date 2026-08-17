@@ -232,9 +232,9 @@ function buildRealRatioSet(gearNumber, nSteps, rangeStart, rangeEnd, defaultInvR
         let targetInv = defaultInvRatio;
         if (nSteps > 1) {
             if (step <= halfwayIndex) {
-                targetInv = lerp(rangeStart, defaultInvRatio, step / halfwayIndex);
+                targetInv = lerp(rangeStart, defaultInvRatio, step / Math.max(1, halfwayIndex));
             } else {
-                targetInv = lerp(defaultInvRatio, rangeEnd, (step - halfwayIndex) / halfwayIndex);
+                targetInv = lerp(defaultInvRatio, rangeEnd, (step - halfwayIndex) / Math.max(1, halfwayIndex));
             }
         }
 
